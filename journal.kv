@@ -1,0 +1,145 @@
+#:kivy 1.9.1
+#:import C kivy.utils.get_color_from_hex
+
+<Button>:
+    background_normal: 'images/button_normal.png'
+    background_down: 'images/button_down.png'
+    font_size: '20sp'
+    halign: 'center'
+    markup: True
+
+
+<Journal>:
+    id: journal
+    orientation: 'vertical'
+    size_hint: 1, 1
+
+    canvas.before:
+        Color:
+            rgba: 66/255.0, 60/255.0, 68/255.0, 1 # main color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    Label:
+        size_hint: 1, 0.15
+        pos_hint_y: 0
+        font_name: "Quicksand"
+        font_size: '36sp'
+        halign: 'center'
+        text: 'Your Mistakes Cost'
+        bold: False
+        color: C('#9d939f') # top letters
+
+    MenuCanvas:
+        id: menu_canvas
+        size_hint: 1, 0.35
+        canvas:
+            Color:
+                rgba: 93/255.0, 83/255.0, 94/255.0, 1 # canvas color
+            Rectangle:
+                pos: self.pos
+                size: self.size
+            Color:
+                rgba: 102/255.0, 153/255.0, 153/255.0, 0.5 # circle color
+            Line:
+                group: 'circle'
+                width: 5
+                circle: (self.center_x, self.center_y, (min(self.width, self.height) / 2) - 20, journal.start_angle, journal.end_angle)
+
+        Label:
+            id: opportunity_cost
+            pos: self.size
+            size: self.size
+            font_size: '80sp'
+            font_name: 'SourceSansPro'
+            halign: 'center'
+            text: 'replace'
+            bold: False
+            color: C('#ED5752') # cost color
+
+    GridLayout:
+        size_hint: 1, 0.055
+        cols: 1
+        rows: 1
+        padding: 10
+        background_color: C('#e4e67f') # top mistakes
+        Label:
+            color: C('#669999')
+            font_name: 'Quicksand'
+            text: "TOP MISTAKES"
+            bold: True
+
+    GridLayout:
+        size_hint: 1, 0.0525
+        cols: 1
+        rows: 1
+        padding: 10
+        background_color: C('#e4e67f') # top mistakes
+        Label:
+            id: mistakes
+            color: C('#9d939f')
+            font_name: 'Quicksand'
+            font_size: "30sp"
+
+
+    GridLayout:
+        size_hint: 1, 0.25
+        cols: 2
+        rows: 1
+        padding: '15sp'
+
+        BoxLayout:
+            padding: ['40sp', 0, '20sp', '40sp']
+            Button:
+                id: commission
+                size_hint: 1, 1
+                text:
+                    ('[color=#c2bbc3][font=Modern Pictograms][size=100]'
+                    '-[/size][/font]\n[font=Ubuntu]Commission[/color][/font]')
+                background_color: C('#423C44') # commission button
+                on_release: app.load_window('commission')
+
+        BoxLayout:
+            padding: ['20sp', 0, '40sp', '40sp']
+            Button:
+                id: omission
+                size_hint: 1, 1
+                text:
+                    ('[color=#c2bbc3][font=Modern Pictograms][size=100]'
+                    '/[/size][/font]\n[font=Ubuntu]Omission[/color][/font]')
+                background_color: C('#423C44') # omission button
+                on_release: app.load_window('omission')
+
+    GridLayout:
+        id: menu
+        cols: 4
+        rows: 1
+        size_hint: 1, None
+        size: root.width, root.height * 0.10
+
+        BoxLayout:
+            padding: ['2sp', '2sp', 0, '2sp']
+#            [padding_left, padding_top, padding_right, padding_bottom]
+            Button:
+                id: Main
+                font_size: '20sp'
+                text: "[font=Quicksand]Main[/font]"
+                background_color: C('#669999') # bottom menu1
+                on_release: app.load_window('home')
+        BoxLayout:
+            padding: ['2sp', '2sp', '2sp', '2sp']
+            Button:
+                id: List
+                font_size: '20sp'
+                text: "[font=Quicksand]Archive[/font]"
+                background_color: C('#5D535E') # buttom menu2
+                on_release: app.load_window('archive')
+        BoxLayout:
+            padding: [0, '2sp', '2sp', '2sp']
+            Button:
+                id: Stat
+                font_size: '20sp'
+                text: "[font=Quicksand]Stat[/font]"
+                background_color: C('#5D535E') # buttom menu3
+                on_release: app.load_window('stats')
+
