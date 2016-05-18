@@ -35,21 +35,6 @@ Builder.load_file('kv-files/omission.kv')
 Builder.load_file('kv-files/archive.kv')
 Builder.load_file('kv-files/stats.kv')
 
-# from add_entry import AddEntry
-# from update_entry import UpdateEntry
-# from review_mistakes import ReviewMistakes
-# from settings import Settings
-# from collect import Collection
-# from favorites import Favorites
-
-# load separate kv for later reference
-# Builder.load_file('kv-files/add_entry.kv')
-# Builder.load_file('kv-files/update_entry.kv')
-# Builder.load_file('kv-files/review_mistakes.kv')
-# Builder.load_file('kv-files/settings.kv')
-# Builder.load_file('kv-files/collection.kv')
-# Builder.load_file('kv-files/favorites.kv')
-
 KIVY_FONTS = [
     {
         "name": "RobotoCondensed",
@@ -93,13 +78,11 @@ class JournalInterfaceManager(BoxLayout):
         self.windows = {}
         self.current_window = None
 
-
         # initially load the journal window as main window
         journal_menu = Journal()
         self.add_window("home", journal_menu)
         self.load_window("home")
         self.windows['home'].get_top_mistakes()
-
 
         omission = Omission()
         self.add_window("omission", omission)
@@ -112,25 +95,6 @@ class JournalInterfaceManager(BoxLayout):
 
         stats = Stats()
         self.add_window("stats", stats)
-
-        # # add remaining windows to tracked windows
-        # enter_tasks = AddEntry()
-        # self.add_window("enter_tasks", enter_tasks)
-        #
-        # update_entry = UpdateEntry()
-        # self.add_window("update_entry", update_entry)
-        #
-        # review_mistakes = ReviewMistakes()
-        # self.add_window("review_mistakes", review_mistakes)
-        #
-        # settings = Settings()
-        # self.add_window("settings", settings)
-        #
-        # collections = Collection()
-        # self.add_window("collections", collections)
-        #
-        # favourites = Favorites()
-        # self.add_window("favorites",favourites)
 
     def add_window(self, key, window):
         self.windows[key] = window
@@ -154,24 +118,22 @@ class JournalInterfaceManager(BoxLayout):
         self.clear_widgets()
         self.add_widget(self.windows[key])
 
-    def update(self, *args):
+    def animate_circle(self, *args):
         if self.current_window == 'home':
-            self.windows['home'].update()
+            self.windows['home'].animate_circle()
 
     def change_top_mistake(self, *args):
         if self.current_window == 'home':
             self.windows['home'].change_top_mistake()
-
-        
 
 class MenuCanvas(BoxLayout):
 
     def __init__(self, **kwargs):
         super(MenuCanvas, self).__init__(**kwargs)
 
-
 class Journal(BoxLayout):
 
+    # angles used to keep track of circle arc
     start_angle = NumericProperty()
     end_angle = NumericProperty()
 
@@ -181,15 +143,18 @@ class Journal(BoxLayout):
         self.start_angle = 250
         self.end_angle = 360
         self.calculate_day_cost()
-        self.demo = []
+        self.top_nouns= []
         self.get_top_mistakes()
 
-    def update(self, *args):
+    def animate_circle(self, *args):
         self.start_angle = self.start_angle + 2.5 
         self.end_angle = self.end_angle + 2.5
 
+    def get_top_nouns(self, top_nouns):
+        pass
+
     def get_top_mistakes(self):
-        # get generator of all nouns in all mistakes
+        '''Update the top mistakes stored on the main page.'''
     
         nouns = self.get_mistake_nouns()
         counts = self.get_nouns_count(nouns)
@@ -197,21 +162,20 @@ class Journal(BoxLayout):
         time = None
         old_list = {}
         changes = False
-        if (os.path.isfile("data.csv")):
-            in_file = open("data.csv", "r")
-            time = datetime.datetime.strptime(in_file.readline().strip(),
-             "%Y-%m-%d %H:%M:%S.%f")
+        if os.path.isfile("nouns.csv"):
+            with open('nouns.csv', 'r') as in_file:
+                time = datetime.datetime.strptime(in_file.readline().strip(),
+                 "%Y-%m-%d %H:%M:%S.%f")
             
-            for line in in_file:
-                temp = line.strip("\n").split(",")
-                old_list[temp[0]] = (int(temp[1]), float(temp[2]))
-            in_file.close()
+                for line in in_file:
+                    temp = line.strip("\n").split(",")
+                    old_list[temp[0]] = (int(temp[1]), float(temp[2]))
         else:
             changes = True
 
         # get top nouns from all nouns
         for noun, times in counts.items():
-            if (noun in old_list):
+            if noun in old_list:
                 if (times[0] != old_list[noun][0]):
                     temp = old_list.pop(noun)
                     temp = (times[0], temp[1]+1)
@@ -226,21 +190,27 @@ class Journal(BoxLayout):
                 top_nouns.append([noun, times[1], times[0]]) 
                 top_nouns.sort(key=lambda x: x[1], reverse=True)
                 top_nouns.pop()
-        
 
+        self.update_mistake_changes(top_nouns, time, old_list)
+        self.write_mistake_changes(changes, time, old_list)
+
+    def update_mistake_changes(self, top_nouns, time, old_list):
+        ''' Updates the values stored in top nouns with the new ones. '''
         for noun in top_nouns:
             mistakes_id = get_mistakes_with_keyword(noun[0])
-            if (time != None):
+            if time:
                 if (time.date() != datetime.datetime.today().date()):
                     temp = old_list.pop(noun[0])
                     temp = (temp[0], temp[1]-0.2)
                     old_list[noun[0]] = temp
             for id in mistakes_id:
                 mistake = get_mistake_verb(id) + " " + get_mistake_noun(id)
-                self.demo.append(mistake)
-        print changes
+                self.top_nouns.append(mistake)
+
+    def write_mistake_changes(self, changes, time, old_list):
+        ''' Outputs the top mistakes into a file nouns.csv. '''
         if changes or (time.date() != datetime.datetime.today().date()):
-            out_file = open("data.csv", "w")
+            out_file = open("nouns.csv", "w")
             if (time != None):
                 if (time.date() == datetime.datetime.today().date()):
                     out_file.write(str(time)+"\n")
@@ -258,9 +228,11 @@ class Journal(BoxLayout):
         with open('mistakes.json', 'w') as data_file:
             json.dump(counts, data_file)
 
-
     def change_top_mistake(self):
-        self.ids['mistakes'].text = random.choice(self.demo)
+        if not self.top_nouns:
+            self.ids['mistakes'].text= 'You currently haven\'t made enough mistakes.'
+        else:
+            self.ids['mistakes'].text = random.choice(self.top_nouns)
 
     def get_nouns_count(self, nouns):
         counts = {}
@@ -279,10 +251,6 @@ class Journal(BoxLayout):
             nouns = [word for word, pos in tagged_sent if pos[0] == 'N']
             for noun in nouns:
                 yield noun.strip('.')
-        
-
-            
-
 
     def calculate_day_cost(self):
         todays_eid = get_entry()
@@ -301,7 +269,7 @@ class JournalApp(App):
     def build(self):
         build_database()
         self.journal = JournalInterfaceManager()
-        Clock.schedule_interval(self.journal.update, 1/60.)
+        Clock.schedule_interval(self.journal.animate_circle, 1/60.)
         Clock.schedule_interval(self.journal.change_top_mistake, 3)
         return self.journal 
 
@@ -310,7 +278,6 @@ class JournalApp(App):
 
 if __name__ == "__main__":
 
-    
     Window.size = (600, 850)
     LabelBase.register(name='Modern Pictograms', fn_regular='images/modernpics.ttf')
     JournalApp().run()
